@@ -12,7 +12,6 @@ IEnumerable<int> NextOfOne(IEnumerable<int> values, int repeat, int amount){
         currentCup = before;
         foreach(var v in values.Skip(1)){
             var node = new Node{
-                Before = before,
                 Value = v
             };
             before.After = node;
@@ -21,7 +20,6 @@ IEnumerable<int> NextOfOne(IEnumerable<int> values, int repeat, int amount){
         }
         //circular
         before.After = currentCup;
-        currentCup.Before = before;
         nodes.Add(before);
     }
     int CupLength = nodes.Count;
@@ -41,14 +39,11 @@ IEnumerable<int> NextOfOne(IEnumerable<int> values, int repeat, int amount){
 
         //3. Places the cups
         var afterCurrent = pickups[2].After;
-        afterCurrent.Before = currentCup;
         currentCup.After = afterCurrent;
 
         var destNode = FindNode(dest);
 
-        pickups[0].Before = destNode;
         pickups[2].After = destNode.After;
-        destNode.After.Before = pickups[2];
         destNode.After = pickups[0];
 
         //4. New current cup
@@ -68,7 +63,6 @@ IEnumerable<int> NextOfOne(IEnumerable<int> values, int repeat, int amount){
     }
 }
 class Node{
-    public Node Before {get; set;}
     public Node After {get; set;}
     public int Value {get;set;}
     public override int GetHashCode()
