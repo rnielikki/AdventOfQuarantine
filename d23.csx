@@ -86,7 +86,3 @@ Console.WriteLine();
 
 var v2 = NextOfOne(input.Concat(Enumerable.Range(10, 1000000-9)), 10000000, 2);
 Console.WriteLine((long)(v2.First())*(long)(v2.Last()));
-
-
-//var res2 = GetResult(input.Concat(Enumerable.Range(10, 1000000-9)), 10000000).SkipWhile(v=>v!=1).Take(3).Skip(1);
-//Console.WriteLine(res2.First()+"  "+res2.Last());
