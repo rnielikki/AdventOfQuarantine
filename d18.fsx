@@ -53,10 +53,6 @@ let rec calcRecursionV2 (input:string) =
     else
         addFirst input
 
-
-//let txt = "1*(this is (not) hello world)+1"
-//printfn "%s :: %A" txt (calcRecursion txt)
-
 let result1 = raw |> Array.fold(fun acc line -> acc+(calcRecursion line)) 0L
 printfn "%A" result1
 let result2 = raw |> Array.fold(fun acc line -> acc+(calcRecursionV2 line)) 0L

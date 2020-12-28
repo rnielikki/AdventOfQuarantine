@@ -96,12 +96,3 @@ Console.WriteLine(RecursiveCombat(realP1, realP2, false));
 var winningQueue = realP1.Any()?realP1:realP2;
 int calcIndex = winningQueue.Count;
 Console.WriteLine(winningQueue.Aggregate(0, (acc,item)=>acc+item*(calcIndex--)));
-Console.WriteLine("--------------**** res *** ---------------------");
-
-foreach(var a in realP1){
-    Console.WriteLine(a);
-}
-Console.WriteLine("--------------");
-foreach(var a in realP2){
-    Console.WriteLine(a);
-}
