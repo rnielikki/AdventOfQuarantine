@@ -1,14 +1,4 @@
 //https://math.stackexchange.com/questions/2254655/hexagon-grid-coordinate-system
-
-/*
-nw (-(y%2),-1)
-w (-1,0)
-sw (-(y+1)%2,1)
-
-ne ((y+1)%2,-1)
-e (1,0)
-se (y%2,-1)
-*/
 using System.IO;
 using System.Collections.Generic;
 var file = File.OpenRead("d24.txt");
