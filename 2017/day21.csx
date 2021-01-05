@@ -1,15 +1,12 @@
 IEnumerable<bool> maps
- = File.ReadAllLines("d21.begin.txt").Select(item=>item.ToCharArray().Select(item=>item=='#'?true:false)).SelectMany(x=>x);
+ = File.ReadAllLines("day21.begin.txt").Select(item=>item.ToCharArray().Select(item=>item=='#'?true:false)).SelectMany(x=>x);
 
-var txt =new StreamReader("d21.txt");
+var txt =new StreamReader("day21.txt");
 while(!txt.EndOfStream){
     string line = txt.ReadLine();
     Rule.RulesList.Add(new Rule(line));
 }
 
-//bool[][] current
-//= File.ReadAllLines("d21.begin.txt").Select(item=>item.ToCharArray().Select(item=>item=='#'?true:false).ToArray()).ToArray();
-//int length = (int)Math.Sqrt(maps.Count());
 int iter = 0;
 int MAX_ITER = 18;
 
@@ -26,7 +23,6 @@ do{
     Console.WriteLine("generation"+iter+": "+maps.Sum(x=>x?1:0));//assure
 } while(iter<MAX_ITER);
 Console.WriteLine(maps.Sum(x=>x?1:0));
-// 2100000 < < 2309840
 
 class Rule
 {
@@ -87,17 +83,11 @@ class Rule
         }
     }
 }
-class Map {
-    public IEnumerable<bool> Value;
+static class Map {
     public static int Length { get; set;} = 3;
-    public Map(IEnumerable<bool> value){
-        Value = value;
-        //Size = (int)Math.Sqrt(Value.Count());
-    }
     public static IEnumerable<bool> Cut(IEnumerable<bool> map){
         int chunkLength = 2+Length%2;
         List<bool> mapList = new();
-        //int length = (int)Math.Sqrt(map.Count());
         int length = Length;
         int amount = length/chunkLength;
         for(int l=0;l<amount;l++){
@@ -118,28 +108,11 @@ class Map {
                 );
             }
             for(int x=0;x<=amount;x++){
-                /*
-                Console.WriteLine(
-                    String.Join("\n", blockCollection.Select
-                        (b=>
-                            new String(b.Select(asdf=>asdf?'#':'.').ToArray())
-                        )
-                    )
-                );*/
                 mapList.AddRange(blockCollection.SelectMany(item=>item.Skip(x*(chunkLength+1)).Take(chunkLength+1)));
             }
-            //Console.WriteLine("---");
             blockCollection.Clear();
         }
-        //Length=(int)length*chunkLength;
         Length+=length/(2+length%2);
-        //Console.WriteLine($"chunkLength: {chunkLength} / Length: {length} / List Size : {mapList.Count}");
-
-        //Console.WriteLine(new String(mapList.Select(asdf=>asdf?'#':'.').ToArray()));
         return mapList;
-    }
-    public override string ToString()
-    {
-        return new String(Value.Select(b=>b?'#':'.').ToArray());
     }
 }
