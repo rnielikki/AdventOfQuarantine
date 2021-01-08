@@ -1,13 +1,16 @@
 var data =
 File.ReadAllLines("day13.txt").Select(item=>{
     var pair = item.Split(':');
-    return new KeyValuePair<int, Layer>(int.Parse(pair[0]), new Layer(int.Parse(pair[1])));
+    int key = int.Parse(pair[0]);
+    return new KeyValuePair<int, Layer>(key, new Layer(key, int.Parse(pair[1])));
 }).ToDictionary(kv=>kv.Key, kv=>kv.Value);
 var layers = data.Values;
 
 int caught = 0;
 int cursor;
 int MAX_DATA = data.Keys.Max()+1;
+
+//-----------1
 
 for(cursor=0;cursor<MAX_DATA;cursor++){
     if(data.ContainsKey(cursor)){
@@ -22,11 +25,26 @@ for(cursor=0;cursor<MAX_DATA;cursor++){
 }
 Console.WriteLine(caught);
 
+//---------------2
+int skip = 0;
+while(true){
+    if(layers.All
+        (layer=>
+        (skip+layer.Label)%(layer.Capacity*2-2) != 0)
+    ){
+        break;
+    }
+    skip++;
+}
+Console.WriteLine(skip);
+
 class Layer{
     public int Capacity { get; }
     public int Position { get; private set; }
+    public int Label { get; }
     private bool _isForward = true;
-    public Layer(int capacity){
+    public Layer(int label, int capacity){
+        Label = label;
         Capacity = capacity;
         Position = 0;
     }
