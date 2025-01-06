@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        let asdf;
+        (async function () {
+            const width = 101;
+            const height = 103;
+            const centerX = Math.floor(width / 2);
+            const centerY = Math.floor(height / 2);
+            //let movingAmount = 100; //this we want to know D:<
+
+            //-- I PROMISE
+            const winPromise = new Promise(resolve => window.addEventListener("load", () => resolve()));
+            const fetchPromise = new Promise(resolve =>
+                fetch("day14.txt").then(d => d.text()).then(d => resolve(d))
+            );
+            await Promise.all([winPromise, fetchPromise])
+            const canvas = document.getElementsByTagName("canvas")[0];
+            const pre = document.getElementsByTagName("pre")[0];
+            const headIndex = document.getElementById("head-index");
+            const ctx = canvas.getContext("2d");
+            const amountX = 16;
+            const amountY = Math.ceil(1000/16);
+            canvas.width = (width+1)*amountX+1;
+            canvas.height = (height+1)*amountY+1;
+            const data = (await fetchPromise).split("\n").filter(a => a).map(a => {
+
+
+                let rgx = /[\-]?[0-9]+/g;
+                let r = [...a.matchAll(rgx)];
+                return {
+                    p: { x: Number(r[0][0]), y: Number(r[1][0]) },
+                    v: { x: Number(r[2][0]), y: Number(r[3][0]) }
+                }
+            });
+            let offset=0;
+            document.getElementById("nav-left").onclick = ()=>{
+                if(offset<=0){
+                    return;
+                }
+                offset-=1000;
+                drawForSearch();
+            }
+            document.getElementById("nav-right").onclick = ()=>{
+                if(offset>=10000){
+                    return;
+                }
+                offset+=1000;
+                drawForSearch();
+            }
+            drawForSearch();
+            function drawForSearch(){
+                headIndex.textContent = `(Drawing ${offset}...)`;
+                ctx.fillStyle = "grey";
+                ctx.rect(0,0,canvas.width, canvas.height);
+                ctx.fill();
+                for(let i=0;i<amountX*amountY;i++) {
+                    let w =  i%amountX*width+i%16+1;
+                    let h =height*Math.floor(i/amountX)+Math.floor(i/16)+1;
+                    drawPixels(simulate(i+offset), w, h);
+                    drawText(i+offset,w,h);
+                }
+                headIndex.textContent = offset;
+            }
+            function drawPixels(input, offsetX, offsetY){
+                const arr = new Uint8ClampedArray(width*height*4);
+                for(let i=0;i<input[0].length;i++){
+                    for(let j=0;j<input.length;j++) {
+                        let index = (i*width+j)*4;
+                        if(input[j][i]!==0) {
+                            arr[index] = 0;
+                            arr[index+1] = 190;
+                            arr[index+2] = 0;
+                            arr[index+3] = 255;
+                        }
+                        else{
+                            arr[index] = 255;
+                            arr[index+1] = 255;
+                            arr[index+2] = 255;
+                            arr[index+3] = 255;
+                        }
+                    }
+                }
+                let imgData = new ImageData(arr,width,height);
+                ctx.putImageData(imgData, offsetX, offsetY);
+            }
+            function simulate(movingAmount) {
+                //let robots = [[0, 0], [0, 0]];
+                let arr = new Array(height).fill(0).map(a => new Array(width).fill(0));
+                for (let robot of data) {
+                    let posx = (robot.v.x * movingAmount + robot.p.x) % width;
+                    let posy = (robot.v.y * movingAmount + robot.p.y) % height;
+                    if (posx < 0) posx += width;
+                    if (posy < 0) posy += height;
+                    arr[posy][posx]++;
+                }
+                return arr;
+            }
+           function drawPre(arr) {
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                            if (arr[y][x] !== 0) {
+                                pre.textContent += arr[y][x]
+                            }
+                            else pre.textContent += '.';
+                    }
+                    pre.textContent += "\n"
+                }
+            }
+
+            function drawBox(x, y, amount) {
+                ctx.fillStyle = `hsl(${amount * 10 % 360}deg, 100%, 50%)`;
+                ctx.rect(x * boxSize, y * boxSize, boxSize, boxSize);
+                ctx.fill();
+            }
+            function drawText(num,x,y) {
+                ctx.font = "10px sans-serif";
+                ctx.fillStyle = "black";
+                ctx.textBaseline = "top";
+                ctx.fillText(num, x,y);
+            }
+        })().value;
+    </script>
+</head>
+<body>
+    <header>
+    <h1>Navigate with buttons and Scroll down to search! 💖</h1>
+    <p>Index <span id="head-index">0</span>/10000</p>
+    </header>
+    <nav>
+        <button id="nav-left">←</button>
+        <button id="nav-right">→</button>
+    </nav>
+    <main>
+    <canvas></canvas>
+    </main>
+</body>
+</html>

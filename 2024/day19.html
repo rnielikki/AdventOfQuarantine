@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        (async function () {
+            const winPromise = new Promise(resolve => window.addEventListener("load", () => resolve()));
+            const fetchPromise = new Promise(resolve =>
+                fetch("day19.txt").then(d => d.text()).then(d => resolve(d))
+            );
+            await Promise.all([winPromise, fetchPromise])
+            const canvas = document.getElementsByTagName("canvas")[0];
+            const ctx = canvas.getContext("2d");
+            let data = (await fetchPromise).split("\n").filter(a=>a);
+            const list = data.splice(0,1)[0].split(", ");
+            const maxtDataLength = Math.max(...data.map(a=>a.length));
+            printData(data);
+            function printData(input) {
+                let w = maxtDataLength;
+                let h = input.length;
+                canvas.width=w;
+                canvas.height=h;
+                let len = w*h;
+                let arr = new Uint8ClampedArray(len<<2);
+                for(let i=0;i<len;i++) {
+                    let d = input[Math.floor(i/w)][Math.floor(i%w)];
+                    switch(d) {
+                        case 'r':
+                            arr[i*4] = 255;
+                            arr[i*4+1] =0;
+                            arr[i*4+2] = 0;
+                            break;
+                        case 'b':
+                            arr[i*4] = 0;
+                            arr[i*4+1] = 0;
+                            arr[i*4+2] = 255;
+                            break;
+                        case 'g':
+                            arr[i*4] = 0;
+                            arr[i*4+1] = 255;
+                            arr[i*4+2] = 0;
+                            break;
+                        case 'w':
+                            arr[i*4] = 255;
+                            arr[i*4+1] = 255;
+                            arr[i*4+2] = 255;
+                            break;
+                        case 'b':
+                            arr[i*4] = 255;
+                            arr[i*4+1] = 255;
+                            arr[i*4+2] = 255;
+                            break;
+                        default:
+                            arr[i*4] = 180;
+                            arr[i*4+1] = 180;
+                            arr[i*4+2] = 180;
+                            break;
+                    }
+                    arr[i*4+3] = 255;
+                }
+                let imgData = new ImageData(arr,w,h);
+                ctx.putImageData(imgData, 0,0);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <canvas>
+    </canvas>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        (async function () {
+            const boxSize = 10;
+            const dirByChar = {
+                '^': { X: 0, Y: -1 },
+                '>': { X: 1, Y: 0 },
+                'v': { X: 0, Y: 1 },
+                '<': { X: -1, Y: 0 }
+            };
+            //-- I PROMISE
+            const winPromise = new Promise(resolve => window.addEventListener("load", () => resolve()));
+            const fetchPromise = new Promise(resolve =>
+                fetch("day15.txt").then(d => d.text()).then(d => resolve(d))
+            );
+            await Promise.all([winPromise, fetchPromise]);
+            let robot = { X: 0, Y: 0 };
+            let parsed = Generate(await fetchPromise);
+            const data = parsed.data;
+            const instructions = parsed.instructions;
+            const canvases = document.getElementsByTagName("canvas");
+            const canvas = canvases[0];
+            const canvas2 = canvases[1];
+            const ctx = canvas.getContext("2d");
+            const ctx2 = canvas2.getContext("2d");
+            let cWidth = canvas.width;
+            let cHeight = canvas.height;
+            canvas2.width = canvas.width;
+            canvas2.height = canvas.height;
+
+            printData(data);
+
+            let offset = 0;
+            let timer = 0;
+            ctx2.fillStyle = "gold";
+            let interval = setInterval(()=>{
+                let inst = instructions[offset];
+                MoveRobot(data, inst);
+                offset++;
+                offset/canvas.width;
+                if((cWidth*offset)%instructions.length===0) {
+                    ctx2.rect(Math.floor(cWidth*offset/instructions.length), 0, 5, cHeight);
+                    ctx2.fill();
+                }
+                if(offset>=instructions.length) clearInterval(interval);
+            }, 10);
+            function Generate(raw) {
+                let secondReading = false;
+                let coordsList = [];
+                let instructions = [];
+                let currentY = 0;
+                for (let lin of raw.split("\n")) {
+                    line = lin.trim();
+                    if (line === "") {
+                        secondReading = true;
+                        continue;
+                    }
+                    if (!secondReading) {
+                        let robotIndex = line.indexOf('@');
+                        if (robotIndex > -1) {
+                            robot.X = robotIndex * 2;
+                            robot.Y = currentY;
+                        }
+                        let str = "";
+                        for (let i = 0; i < line.length; i++) {
+                            let c = line[i];
+                            switch (c) {
+                                case '#':
+                                case '.':
+                                    str += c + c;
+                                    break;
+                                case '@':
+                                    str += "@.";
+                                    break;
+                                case 'O':
+                                    str += "[]";
+                                    break;
+                                default:
+                                    throw `unexpected "${c}" caught`;
+                            }
+                        }
+                        coordsList[currentY] = [...str];
+                        currentY++;
+                    }
+                    else {
+                        for (let c of line) {
+                            instructions.push(dirByChar[c]);
+                        }
+                    }
+                }
+                return {
+                    data: coordsList,
+                    instructions: instructions
+                }
+            }
+            function MoveRobot(input, direction) {
+                var nextPos = addPoint(robot, direction);
+                switch (input[nextPos.Y][nextPos.X]) {
+                    case '.':
+                    case '[':
+                    case ']':
+                        if (MoveItem(input, robot, nextPos, direction)) {
+                            robot = nextPos;
+                        }
+                        break;
+                    case '#':
+                        break;
+                    default:
+                        throw input[nextPos.Y][nextPos.X].toString();
+                }
+            }
+
+            function MoveItem(input, from, to, direction) {
+                var destValue = input[to.Y][to.X];
+                if (destValue != '.') {
+                    if (destValue == '[' || destValue == ']') {
+                        if (direction.Y === 0) {
+                            if (MoveItem(input, to, addPoint(to, direction), direction)) {
+                                Move(input, from, to);
+                                return true;
+                            }
+                            else return false;
+                        }
+                        else {
+                            let canMove = MoveTest(input, to, direction);
+                            if (canMove) {
+                                MoveChain(input, from, to, direction);
+                                return true;
+                            }
+                            else return false;
+                        }
+                    }
+                    return false;
+                }
+                Move(input, from, to);
+                return true;
+            }
+
+            function MoveTest(input, to, direction) {
+                var destValue = input[to.Y][to.X];
+                if (destValue != '.') {
+                    if (destValue == '[' || destValue == ']') {
+                        let valid = true;
+                        let neighbour = {
+                            X: to.X + ((destValue == '[') ? 1 : -1),
+                            Y: to.Y
+                        }
+                        valid &= MoveTest(input, addPoint(to, direction), direction);
+                        valid &= MoveTest(input, addPoint(neighbour, direction), direction);
+                        return valid;
+                    }
+                    return false;
+                }
+                else return true;
+            }
+            function MoveChain(input, from, to, direction) {
+                var destValue = input[to.Y][to.X];
+                if (destValue != '.') {
+                    if (destValue == '[' || destValue == ']') {
+                        let neighbour = {
+                            X: to.X + ((destValue == '[') ? 1 : -1),
+                            Y: to.Y
+                        }
+                        MoveChain(input, to, addPoint(to, direction), direction);
+                        MoveChain(input, neighbour, addPoint(neighbour, direction), direction);
+                        Move(input, from, to);
+                    }
+                }
+                else Move(input, from, to);
+            }
+
+            function Move(input, from, to) {
+                input[to.Y][to.X] = input[from.Y][from.X];
+                input[from.Y][from.X] = '.';
+                let fromImgData = ctx.getImageData(from.X,from.Y,1,1);
+                let toImgData = ctx.getImageData(to.X,to.Y,1,1);
+                ctx.putImageData(toImgData, from.X, from.Y);
+                ctx.putImageData(fromImgData, to.X, to.Y);
+            }
+            function printData(input) {
+                let w = input[0].length;
+                let h = input.length;
+                canvas.width=w;
+                canvas.height=h;
+                let len = w*h;
+                let arr = new Uint8ClampedArray(len<<2);
+                for(let i=0;i<len;i++) {
+                    let d = input[Math.floor(i/w)][Math.floor(i%w)];
+                    switch(d) {
+                        case '#':
+                            arr[i*4] = 160;
+                            arr[i*4+1] =150;
+                            arr[i*4+2] = 150;
+                            break;
+                        case '[':
+                            arr[i*4] = 0;
+                            arr[i*4+1] = 132;
+                            arr[i*4+2] = 0;
+                            break;
+                        case ']':
+                            arr[i*4] = 0;
+                            arr[i*4+1] = 150;
+                            arr[i*4+2] = 0;
+                            break;
+                        case '@':
+                            arr[i*4] = 0;
+                            arr[i*4+1] = 0;
+                            arr[i*4+2] = 255;
+                            break;
+                        default:
+                            continue;
+                    }
+                    arr[i*4+3] = 255;
+                }
+                let imgData = new ImageData(arr,w,h);
+                ctx.putImageData(imgData, 0,0);
+            }
+            function addPoint(dir1, dir2) {
+                return {
+                    X: dir1.X + dir2.X,
+                    Y: dir1.Y + dir2.Y
+                }
+            }
+        })();
+    </script>
+    <style>
+        body {
+            position: relative;
+        }
+        canvas {
+            width:100%;
+            image-rendering: pixelated;
+            position: absolute;
+            top:0;left:0;
+        }
+    </style>
+</head>
+<body>
+    <canvas style="z-index:2"></canvas>
+    <canvas></canvas>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+    <script src="day24.js"></script>
+    <script>
+        (async function () {
+            const winPromise = new Promise(resolve => window.addEventListener("load", () => resolve()));
+            const fetchPromise = new Promise(resolve =>
+                fetch("day24_test.txt").then(d => d.text()).then(d => resolve(d))
+            );
+            await Promise.all([winPromise, fetchPromise]);
+            const raw = await fetchPromise;
+            const instructions = part1(raw).instructions;
+            //return;
+            let syntax = "graph TD\n";
+            let index = 0;
+            for(let instruction of instructions){
+                let opId = `${instruction.op}${index}`;
+                let opName = `${opId}{${instruction.op}}`
+                syntax+=`${instruction.val1} --> ${opName}\n`;
+                syntax+=fillInput(instruction.val1);
+                syntax+=fillOp(opId, instruction.op);
+                syntax+=`${instruction.val2} --> ${opName}\n`;
+                syntax+=fillInput(instruction.val2);
+                syntax+=`${opName} --> ${instruction.result}\n`;
+                if(instruction.op!="XOR" && instruction.result[0]=="z"){
+                    console.log(instruction.result);
+                    syntax+=fillIf(instruction.result,"z","blue", true);
+                }
+                else{
+                    syntax+=fillIf(instruction.result,"z","pink");
+                }
+                index++;
+            }
+            document.getElementsByClassName("test")[0].textContent = syntax;
+            mermaid.initialize({ startOnLoad: false, maxEdges:1000 });
+            await mermaid.run({ querySelector:".test" });
+            function fillInput(name) {
+                let res = "";
+                res+=fillIf(name, "x", "#cdcdff");
+                res+=fillIf(name, "y", "#a0a0ff");
+                return res;
+            }
+            function fillOp(id, name) {
+                switch(name){
+                    case "AND":
+                        return fill(id, "yellow");
+                    case "OR":
+                        return fill(id, "red");
+                    case "XOR":
+                        return fill(id, "brown");
+                }
+            }
+            function fillIf(id, chr, clr, white=false) {
+                if(id[0]===chr) return fill(id, clr, white);
+                return "";
+            }
+            function fill(id, clr, white=false) {
+                return `style ${id} fill:${clr}${(white?",color:white":"")}\n`;
+            }
+        })();
+    </script>
+</head>
+<body>
+    <pre class="test"></pre>
+</body>
+</html>

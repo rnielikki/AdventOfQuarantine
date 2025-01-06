@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        (async function () {
+            const winPromise = new Promise(resolve => window.addEventListener("load", () => resolve()));
+            const fetchPromise = new Promise(resolve =>
+                fetch("day13.txt").then(d => d.text()).then(d => resolve(d))
+            );
+            await Promise.all([winPromise, fetchPromise]);
+
+            const canvas = document.getElementsByTagName("canvas")[0];
+            const ctx = canvas.getContext("2d");
+            const padding = 20;
+            const thickness = 1;
+            //unfortunately, scale is required for not killing the canvas...
+            //even in part 1
+            const scale = 0.05;
+
+            let data = [];
+            let current = {};
+            let raw = (await fetchPromise).split("\n");
+            for (let i = 0; i < raw.length; i++) {
+                switch (i % 4) {
+                    case 0:
+                        current.A = parse(raw[i].substring(10));
+                        break;
+                    case 1:
+                        current.B = parse(raw[i].substring(10));
+                        break;
+                    case 2:
+                        current.prize = parse(raw[i].substring(7));
+                        //not fun to visualise definitely
+                        //current.prize.x+=10000000000000;
+                        //current.prize.y+=10000000000000;
+                        data.push(current);
+                        current = {};
+                        break;
+                    default:
+                        break;
+                }
+            }
+            function parse(r) {
+                let sp = r.split(", ");
+                return { x: Number(sp[0].substring(2)), y: Number(sp[1].substring(2)) }
+            }
+            //------------------- calculating part!
+            let byResult = Object.groupBy(data.map(d=>find(d)), d => d.score!==0);
+            let found = byResult.true;
+            let notFound = byResult.false;
+            //------------------------------------- [ drawing time ] ----------------------
+            //total score
+            let width = found.reduce((a,b)=>Math.max(a,b.destination.x),0)+500;
+            let height = found.reduce((a,b)=>Math.max(a,b.destination.y),0)+500;
+            canvas.width = padding*2 + width*scale;
+            canvas.height = padding*2 + height*scale;
+            //---------- grid
+            draw([0,0],[width,0],"grey");
+            for(let i=0;i<width;i+=500) {
+                draw([i,0],[i,height],"lightgrey");
+            }
+            draw([0,0],[0,height],"grey");
+            for(let i=0;i<height;i+=500) {
+                draw([0,i],[width,i],"lightgrey");
+                
+            }
+            //---------- circle
+            for(let d of notFound) {
+                drawCircle(d.destination.x, d.destination.y, "lightgrey");
+            }
+            for(let d of found) {
+                drawData(d);
+            }
+            //---------- line
+            drawInfo();
+
+            function find(input) {
+                let a = input.A.x; let b = input.A.y; let c = input.B.x; let d = input.B.y;
+                let rx = input.prize.x; let ry = input.prize.y;
+                if (b * c == a * d) return { destination:input.prize, score:0 };
+                let n = (d * rx - c * ry) / (a * d - b * c);
+                let m = (b * rx - a * ry) / (b * c - a * d);
+                if (n < 0 || m < 0 || n % 1 !== 0 || m % 1 !== 0) {
+                    return { destination:input.prize, score:0 };
+                }
+                return { A:n, B:m, value:input, score: n*3+m, destination: input.prize};
+            }
+            //could add async anim but becomes slow lol.
+            function drawData(findData) {
+                drawCircle(findData.destination.x, findData.destination.y, "gold");
+                let lastCoord = [0,0];
+                let nextCoord = [findData.value.A.x, findData.value.A.y];
+                drawOneType(findData.value.A, findData.A, "red");
+                drawOneType(findData.value.B, findData.B, "blue");
+                function drawOneType(dir, amount, clr) {
+                    nextCoord[0] += dir.x*amount;
+                    nextCoord[1] += dir.y*amount;
+                    draw(lastCoord, nextCoord, clr);
+                    lastCoord = [...nextCoord];
+                }
+            }
+            function draw(coord1, coord2, clr)
+            {
+                ctx.beginPath();
+                ctx.lineWidth = thickness;
+                ctx.strokeStyle = clr;
+                ctx.moveTo(coord1[0]*scale+padding, coord1[1]*scale+padding);
+                ctx.lineTo(coord2[0]*scale+padding, coord2[1]*scale+padding);
+                ctx.stroke();
+                ctx.closePath();
+            }
+            function drawCircle(x,y, clr) {
+                ctx.beginPath();
+                ctx.arc(x*scale+padding,y*scale+padding,5,0,2*Math.PI);
+                ctx.fillStyle=clr;
+                ctx.fill();
+                ctx.closePath();
+            }
+            function drawInfo() {
+                const w = 160;
+                const h = 130;
+                ctx.beginPath();
+                ctx.fillStyle="white";
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "grey";
+                ctx.rect(width*scale-w, padding+10, w,h);
+                ctx.fill();
+                ctx.stroke();
+                //--------------
+                ctx.font = "14px sans-serif";
+                ctx.fillStyle = "black";
+                let pressedA = found.reduce((a,b)=>a+b.A,0);
+                let pressedB = found.reduce((a,b)=>a+b.B,0);
+                ctx.fillText(`data amount ${data.length}`, width*scale-w+10,padding+30);
+                ctx.fillText(`valid ${found.length}`, width*scale-w+10,padding+50);
+                ctx.fillText(`pressed A ${pressedA}`, width*scale-w+10,padding+70);
+                ctx.fillText(`pressed B ${pressedB}`, width*scale-w+10,padding+90);
+                ctx.fillText(`total pressed ${pressedA+pressedB}`, width*scale-w+10,padding+110);
+                ctx.fillText(`total coins ${pressedA*3+pressedB}`, width*scale-w+10,padding+130);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <canvas></canvas>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        (async function() {
+            const gap = 30;
+            const thickness = 3;
+            const allDirs = [{x:0, y:1}, {x:0, y:-1}, {x:1, y:0}, {x:-1, y:0}];
+            let dirNames = {
+                down:0,
+                up:1,
+                right:2,
+                left:3
+            };
+            const emojis = ["🌸","🌷","🌼","🌻","🌹","🌳","🌴",//abcdefg
+            "🌱","🪷","🥀","🪻","🌺","🌵","🌾","🏵️","💮",//hijklmnop
+            "☘️","🌲","🍁","🍄","🍄‍🟫","🌽","🍂","🌿","🍃","🥔"//qrstuvwxyz
+            ];
+            const winPromise = new Promise(resolve => window.addEventListener("load",()=>resolve()));
+            const fetchPromise = new Promise(resolve=>
+                fetch("day12.txt").then(d => d.text()).then(d=>resolve(d))
+            );
+            await Promise.all([winPromise, fetchPromise]);
+            const data = (await fetchPromise).split("\r\n").map(a=>a.split("").filter(a => /^[A-Z]$/.test(a)));
+            const map = new Set();
+            const canvas = document.getElementsByTagName("canvas")[0];
+            canvas.width = data[0].length*gap;
+            canvas.height = data.length*gap
+            const ctx = canvas.getContext("2d");
+
+            let sum  = 0;
+
+            ctx.beginPath();
+            ctx.lineWidth = thickness;
+            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+
+            for(let y=0;y<data.length;y++) {
+                for(let x=0;x<data.length;x++) {
+                    setRect(x, y, getClr(data[y][x]),emojis[data[y][x].charCodeAt(0)-65]);
+                    //map.clear();
+                    let res = {
+                        region:0,corner:0
+                    };
+                    getRegionAndEdge(x, y, res);
+                    if(res.corner===0) continue;
+                    let final = res.corner*res.region
+                    sum+=final;
+                    console.log(`${data[y][x]} : ${res.corner} * ${res.region} = ${final}`);
+                }
+            }
+            ctx.stroke();
+            ctx.closePath();
+            console.log(sum);
+
+            function getRegionAndEdge(x, y, res) {
+                const hash  = getHash(x, y);
+                if(map.has(hash)) {
+                    return res;
+                }
+                map.add(hash);
+                res.region++;
+                let edgeDirs = [];
+                for(let i=0;i<4;i++)
+                {
+                    let dir = allDirs[i];
+                    var nextX=x+dir.x;
+                    var nextY=y+dir.y;
+                    if(isValid(nextX, nextY) && data[y][x]===data[nextY][nextX]) {
+                        getRegionAndEdge(nextX, nextY, res, dir);
+                    }
+                    else drawLine(x, y, dir);
+                }
+                let valid = [];
+                for(let i=0;i<4;i++)
+                {
+                    let dir = allDirs[i];
+                    var nextX=x+dir.x;
+                    var nextY=y+dir.y;
+                    valid.push((isValid(nextX, nextY) && data[y][x]===data[nextY][nextX]));
+                }
+                if (!valid[dirNames.up] && !valid[dirNames.right]) {
+                    res.corner++;
+                }
+                if (!valid[dirNames.right] && !valid[dirNames.down]) {
+                    res.corner++;
+                }
+                if (!valid[dirNames.down] && !valid[dirNames.left]) {
+                    res.corner++;
+                }
+                if (!valid[dirNames.left] && !valid[dirNames.up]) {
+                    res.corner++;
+                }
+
+                if (valid[dirNames.up] && valid[dirNames.right]) {
+                    let nextX = x+1;
+                    let nextY = y-1;
+                    if (!isValid(nextX, nextY) || data[y][x]!==data[nextY][nextX]) {
+                        res.corner++;
+                    }
+                }
+                if (valid[dirNames.right] && valid[dirNames.down]) {
+                    let nextX = x+1;
+                    let nextY = y+1;
+                    if (!isValid(nextX, nextY) || data[y][x]!==data[nextY][nextX]) {
+                        res.corner++;
+                    }
+                }
+                if (valid[dirNames.down] && valid[dirNames.left]) {
+                    let nextX = x-1;
+                    let nextY = y+1;
+                    if (!isValid(nextX, nextY) || data[y][x]!==data[nextY][nextX]) {
+                        res.corner++;
+                    }
+                }
+                if (valid[dirNames.left] && valid[dirNames.up]) {
+                    let nextX = x-1;
+                    let nextY = y-1;
+                    if (!isValid(nextX, nextY) || data[y][x]!==data[nextY][nextX]) {
+                        res.corner++;
+                    }
+                }
+            }
+            function drawLine(x, y, direction) {
+                let vecs = [
+                    [Number(direction.x+direction.y> 0),Number(-direction.x+direction.y>0)],
+                    [Number(direction.x-direction.y>0),Number(direction.x+direction.y>0)]
+                ]
+                let fromPosX = (x+vecs[0][0]);
+                let fromPosY = (y+vecs[0][1]);
+                let toPosX = (x+vecs[1][0]);
+                let toPosY = (y+vecs[1][1]);
+                ctx.moveTo(fromPosX*gap, fromPosY*gap);
+                ctx.lineTo(toPosX*gap, toPosY*gap);
+            }
+            function getClr(data) {
+                let clrBase = (data.charCodeAt(0)-65)*14.4;
+                return `oklch(60% 0.4 ${clrBase})`;
+            }
+            function getClr2(data) {
+                return "#0000ff";
+            }
+            function setRect(x, y, clr, val) {
+                ctx.fillStyle = clr;
+                ctx.fillRect(x*gap, y*gap, gap, gap);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = gap+"px serif";
+                ctx.fillStyle = "rgba(255,255,255,0.75)";
+                ctx.fillText(val,x*gap+gap*0.5,y*gap+gap*0.5);
+            }
+            function isValid(x, y) {
+                return (x>=0 && y>=0 && x<data[0].length && y<data.length);
+            }
+            function getHash(x, y) {
+                return (x<<8) + y;
+            }
+        })();
+    </script>
+</head>
+<body>
+    <canvas></canvas>
+</body>
+</html>
